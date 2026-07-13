@@ -80,6 +80,12 @@ The project includes two AI-powered features:
 - Recommendation system
 - Notifications
 
+## Project Demo
+
+A complete walkthrough of the project is available here:
+
+**Demo Video:** https://youtu.be/qcqFbXrKc0I?si=S0fQuBxT4hyCciuz
+
 ## Developer
 
 **Raghav Gautam**
