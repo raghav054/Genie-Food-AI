@@ -2,11 +2,10 @@
   "name": "genie-food-ai",
   "version": "1.0.0",
   "description": "AI-powered food ordering web application built using the MERN stack with Stripe payments and AI-generated food descriptions and restaurant review summaries.",
-  "main": "backend/server.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "dev": "nodemon backend/server.js",
-    "prod": "NODE_ENV=production node backend/server.js",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
     "seeder": "node utils/seeder.js"
   },
   "author": "Raghav Gautam",
