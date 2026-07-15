@@ -23,9 +23,12 @@ const errorMiddleware = require("./middlewares/errors");
 //
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin:
+      process.env.NODE_ENV === "production"
+        ? process.env.FRONTEND_URL
+        : "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
 
 // Body Parser (Express built-in)
