@@ -12,66 +12,82 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // Create a new order   =>  /api/v1/order/new
 exports.newOrder = catchAsyncErrors(async (req, res, next) => {
-  // console.log("id", req.body);
-  const { session_id } = req.body;
 
-  const session = await stripe.checkout.sessions.retrieve(session_id, {
-    expand: ["customer"],
-  });
-  console.log(session);
-  const cart = await Cart.findOne({ user: req.user._id })
+    const { session_id } = req.body;
+
+    console.log("Session ID:", session_id);
+
+    const session = await stripe.checkout.sessions.retrieve(session_id,{
+        expand:["customer"]
+    });
+
+    console.log("Payment Status:", session.payment_status);
+
+    if(session.payment_status !== "paid"){
+        return next(new ErrorHandler("Payment not completed",400));
+    }
+
+    const cart = await Cart.findOne({user:req.user._id})
     .populate({
-      path: "items.foodItem",
-      select: "name price images",
+        path:"items.foodItem",
+        select:"name price images"
     })
     .populate({
-      path: "restaurant",
-      select: "name",
+        path:"restaurant",
+        select:"name"
     });
-  console.log(cart);
 
-  let deliveryInfo = {
-    address:
-      session.shipping_details.address.line1 +
-      " " +
-      session.shipping_details.address.line1,
-    city: session.shipping_details.address.city,
-    phoneNo: session.customer_details.phone,
-    postalCode: session.shipping_details.address.postal_code,
-    country: session.shipping_details.address.country,
-  };
-  let orderItems = cart.items.map((item) => ({
-    name: item.foodItem.name,
-    quantity: item.quantity,
-    image: item.foodItem.images[0].url,
-    price: item.foodItem.price,
-    fooditem: item.foodItem._id,
-  }));
+    if(!cart){
+        return next(new ErrorHandler("Cart not found",404));
+    }
 
-  let paymentInfo = {
-    id: session.payment_intent,
-    status: session.payment_status,
-  };
+    const deliveryInfo = {
+        address:
+            session.shipping_details?.address?.line1 || "",
+        city:
+            session.shipping_details?.address?.city || "",
+        phoneNo:
+            session.customer_details?.phone || "",
+        postalCode:
+            session.shipping_details?.address?.postal_code || "",
+        country:
+            session.shipping_details?.address?.country || ""
+    };
 
-  const order = await Order.create({
-    orderItems,
-    deliveryInfo,
-    paymentInfo,
-    deliveryCharge: +session.shipping_cost.amount_subtotal / 100,
-    itemsPrice: +session.amount_subtotal / 100,
-    finalTotal: +session.amount_total / 100,
-    user: req.user.id,
-    restaurant: cart.restaurant._id,
-    paidAt: Date.now(),
-  });
-  console.log(order);
+    const orderItems = cart.items.map(item=>({
+        name:item.foodItem.name,
+        quantity:item.quantity,
+        image:item.foodItem.images[0].url,
+        price:item.foodItem.price,
+        fooditem:item.foodItem._id
+    }));
 
-  await Cart.findOneAndDelete({ user: req.user._id });
+    const paymentInfo = {
+        id:session.payment_intent,
+        status:session.payment_status
+    };
 
-  res.status(200).json({
-    success: true,
-    order,
-  });
+    const order = await Order.create({
+        orderItems,
+        deliveryInfo,
+        paymentInfo,
+        deliveryCharge:session.shipping_cost?.amount_subtotal
+            ? session.shipping_cost.amount_subtotal/100
+            : 0,
+        itemsPrice:session.amount_subtotal/100,
+        finalTotal:session.amount_total/100,
+        user:req.user.id,
+        restaurant:cart.restaurant._id,
+        paidAt:Date.now()
+    });
+
+    await Cart.findOneAndDelete({user:req.user._id});
+
+    res.status(200).json({
+        success:true,
+        order
+    });
+
 });
 
 // Get single order   =>   /api/v1/orders/:id
