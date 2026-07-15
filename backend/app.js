@@ -15,38 +15,30 @@ const errorMiddleware = require("./middlewares/errors");
 // =======================
 
 // CORS
-// Local:
-// FRONTEND_URL=http://localhost:5173
-//
-// Production:
-// FRONTEND_URL=https://your-vercel-app.vercel.app
-//
-
-console.log("NODE_ENV:", process.env.NODE_ENV);
-console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
-
-// app.use(
-//   cors({
-//     origin:
-//       process.env.NODE_ENV === "production"
-//         ? process.env.FRONTEND_URL
-//         : "http://localhost:5173",
-//     credentials: true,
-//   }),
-// );
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://genie-food-ai.vercel.app",
+];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      console.log("Incoming Origin:", origin);
+    origin: function (origin, callback) {
+      // Allow requests without Origin (Postman, Render Health Check)
+      if (!origin) {
+        return callback(null, true);
+      }
 
-      callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-// Body Parser (Express built-in)
+// Body Parser
 app.use(express.json({ limit: "30kb" }));
 app.use(express.urlencoded({ extended: true, limit: "30kb" }));
 
@@ -56,20 +48,16 @@ app.use(cookieParser());
 // File Upload
 app.use(fileUpload());
 
-
 // =======================
 // Stripe Proxy (Optional)
 // =======================
 //
-// Stripe Checkout DOES NOT require this.
-// Keep it commented.
-// Uncomment ONLY if you intentionally proxy Stripe assets.
+// Uncomment ONLY if required
 //
 // app.use("/proxy", (req, res) => {
 //   const url = "https://checkout.stripe.com" + req.url;
 //   req.pipe(request(url)).pipe(res);
 // });
-
 
 // =======================
 // Routes
@@ -92,9 +80,7 @@ app.use("/api/v1/users", auth);
 app.use("/api/v1", payment);
 app.use("/api/v1/coupon", coupon);
 app.use("/api/v1/eats/cart", cart);
-
 app.use("/api/v1/ai", aiRoutes);
-
 
 // =======================
 // Pug Email Templates
@@ -103,18 +89,16 @@ app.use("/api/v1/ai", aiRoutes);
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "view"));
 
-
 // =======================
 // 404 Route
 // =======================
 
-app.all("*", (req, res, next) => {
+app.all("*", (req, res) => {
   res.status(404).json({
     status: "fail",
     message: `Can't find ${req.originalUrl} on this server!`,
   });
 });
-
 
 // =======================
 // Global Error Handler
