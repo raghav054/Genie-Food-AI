@@ -21,14 +21,29 @@ const errorMiddleware = require("./middlewares/errors");
 // Production:
 // FRONTEND_URL=https://your-vercel-app.vercel.app
 //
+
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
+
+// app.use(
+//   cors({
+//     origin:
+//       process.env.NODE_ENV === "production"
+//         ? process.env.FRONTEND_URL
+//         : "http://localhost:5173",
+//     credentials: true,
+//   }),
+// );
+
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? process.env.FRONTEND_URL
-        : "http://localhost:5173",
+    origin: (origin, callback) => {
+      console.log("Incoming Origin:", origin);
+
+      callback(null, true);
+    },
     credentials: true,
-  }),
+  })
 );
 
 // Body Parser (Express built-in)
