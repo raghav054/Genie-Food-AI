@@ -12,6 +12,9 @@ const sendToken = (user, statusCode, res) => {
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   };
 
+  console.log("NODE_ENV in sendToken:", process.env.NODE_ENV);
+  console.log("Cookie Options:", cookieOptions);
+
   res.cookie("jwt", token, cookieOptions);
 
   user.password = undefined;
